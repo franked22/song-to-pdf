@@ -1,84 +1,28 @@
 "use client";
 
+import AppShell from "@/components/AppShell";
+
+const headerActions = (
+  <div className="flex items-center gap-4">
+    <div className="relative group">
+      <span className="material-symbols-outlined text-outline cursor-pointer group-hover:text-primary transition-colors">search</span>
+    </div>
+    <button className="p-2 text-zinc-500 hover:text-zinc-300 transition-all active:scale-95 duration-150">
+      <span className="material-symbols-outlined">notifications</span>
+    </button>
+    <button className="p-2 text-zinc-500 hover:text-zinc-300 transition-all active:scale-95 duration-150">
+      <span className="material-symbols-outlined">settings</span>
+    </button>
+    <button className="ml-4 px-4 py-1.5 bg-surface-container-highest text-primary font-bold rounded-md hover:bg-surface-bright transition-colors text-xs font-body">
+      Export Score
+    </button>
+  </div>
+);
+
 export default function StemsMixerPage() {
   return (
-    <>
-      
-<aside className="fixed left-0 top-0 h-screen w-64 bg-[#1C1B1B] dark:bg-[#1C1B1B] flex flex-col py-4 z-50 border-r border-zinc-800/15 shadow-[40px_0_40px_rgba(0,0,0,0.06)]">
-<div className="mb-8 px-6">
-<h1 className="text-lg font-semibold text-zinc-100 font-headline">The Conductor</h1>
-<p className="text-[10px] text-stone-500 font-label uppercase tracking-widest mt-1">Professional Tier</p>
-</div>
-<nav className="flex-1 flex flex-col h-full">
-<a className="flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-zinc-200 hover:bg-[#2A2A2A] transition-colors group font-['Manrope'] text-sm font-medium" href="#">
-<span className="material-symbols-outlined" data-icon="dashboard">dashboard</span>
-<span className="tracking-tight">Overview</span>
-</a>
-<a className="flex items-center gap-3 px-4 py-3 bg-[#2A2A2A] text-teal-400 rounded-md ml-2 my-1 transition-all group font-['Manrope'] text-sm font-medium" href="#">
-<span className="material-symbols-outlined" data-icon="upload_file">upload_file</span>
-<span className="tracking-tight">Uploader</span>
-</a>
-<a className="flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-zinc-200 hover:bg-[#2A2A2A] transition-colors group font-['Manrope'] text-sm font-medium" href="#">
-<span className="material-symbols-outlined" data-icon="edit_note">edit_note</span>
-<span className="tracking-tight">Notation Editor</span>
-</a>
-<a className="flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-zinc-200 hover:bg-[#2A2A2A] transition-colors group font-['Manrope'] text-sm font-medium" href="#">
-<span className="material-symbols-outlined" data-icon="queue_music">queue_music</span>
-<span className="tracking-tight">Lead Sheets</span>
-</a>
-<a className="flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-zinc-200 hover:bg-[#2A2A2A] transition-colors group font-['Manrope'] text-sm font-medium" href="#">
-<span className="material-symbols-outlined" data-icon="tune">tune</span>
-<span className="tracking-tight">Stems Mixer</span>
-</a>
-<a className="flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-zinc-200 hover:bg-[#2A2A2A] transition-colors group font-['Manrope'] text-sm font-medium" href="#">
-<span className="material-symbols-outlined" data-icon="library_music">library_music</span>
-<span className="tracking-tight">Library</span>
-</a>
-</nav>
-<div className="mt-auto pt-6 px-4 border-t border-white/5">
-<div className="flex items-center gap-3 mb-6 px-2">
-<div className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
-<img alt="User Profile Avatar" className="w-full h-full object-cover" data-alt="Close up portrait of a professional male musician in a dark studio setting with moody lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8-9ZWoiAURLKiF7_rdVRsqI_lscYTM2kPiFYT8G-GsciB2aviZYwjLGBPImsbav8GYZcaZBqA4MoTA2ghhLj8IbCxsQ3W89qA0j8hwfFtuedwnKQeXwUxSb14TVl_AVZNe4SSjXhynIeQh7UkDrfAcW1F1iJrTmCFx4Mz5gKPT49pljxu3iaOyEGXfPGlq4rU7JlzthXpYYiKZkXigmMJ70AP8gL2OAytAassCKkV5441Gt5TgGaE-0NoHlh__2bRZtNzUHK7Gg"/>
-</div>
-<div>
-<p className="text-sm font-bold text-on-surface">Alex River</p>
-<p className="text-[10px] text-outline uppercase tracking-tighter">Chief Arranger</p>
-</div>
-</div>
-<button className="w-full py-3 bg-gradient-to-br from-[#C1C1FF] to-[#4A4BDC] text-on-primary-fixed font-bold rounded-md active:scale-95 duration-150 transition-all text-sm mb-4">
-        New Transcription
-      </button>
-</div>
-</aside>
-
-<header className="fixed top-0 right-0 left-64 h-16 bg-[#131313] dark:bg-[#131313] flex justify-between items-center px-6 py-3 z-40 border-b border-white/5">
-<div className="flex items-center gap-8">
-<span className="text-xl font-bold text-indigo-100 font-headline tracking-tight">Harmonic Precision</span>
-<nav className="hidden md:flex items-center gap-6">
-<a className="text-indigo-400 border-b-2 border-indigo-400 pb-1 text-sm font-medium font-body" href="#">Projects</a>
-<a className="text-zinc-500 hover:text-zinc-300 transition-colors text-sm font-medium font-body" href="#">Shared</a>
-<a className="text-zinc-500 hover:text-zinc-300 transition-colors text-sm font-medium font-body" href="#">Recent</a>
-</nav>
-</div>
-<div className="flex items-center gap-4">
-<div className="relative group">
-<span className="material-symbols-outlined text-outline cursor-pointer group-hover:text-primary transition-colors" data-icon="search">search</span>
-</div>
-<button className="p-2 text-zinc-500 hover:text-zinc-300 transition-all active:scale-95 duration-150">
-<span className="material-symbols-outlined" data-icon="notifications">notifications</span>
-</button>
-<button className="p-2 text-zinc-500 hover:text-zinc-300 transition-all active:scale-95 duration-150">
-<span className="material-symbols-outlined" data-icon="settings">settings</span>
-</button>
-<button className="ml-4 px-4 py-1.5 bg-surface-container-highest text-primary font-bold rounded-md hover:bg-surface-bright transition-colors text-xs font-body">
-        Export Score
-      </button>
-</div>
-</header>
-
-<main className="ml-64 mt-16 h-[calc(100vh-144px)] overflow-y-auto p-12 bg-background">
-<div className="max-w-6xl mx-auto">
-
+    <AppShell headerActions={headerActions}>
+      <div className="pt-8 pb-24 px-8 max-w-6xl mx-auto w-full">
 <div className="mb-10 text-center">
 <h2 className="text-4xl font-headline font-bold tracking-tight text-on-surface mb-2">Ingest New Audio</h2>
 <p className="text-outline font-body">Upload high-fidelity stems or field recordings for AI-driven orchestration.</p>
@@ -273,27 +217,7 @@ export default function StemsMixerPage() {
 </div>
 </div>
 </div>
-</div></main>
-
-<footer className="fixed bottom-0 right-0 left-64 h-20 bg-stone-900/80 dark:bg-[#1C1B1B]/80 backdrop-blur-2xl flex justify-center items-center space-x-12 z-50 border-t border-white/10 shadow-2xl shadow-black">
-<div className="flex flex-col items-center group cursor-pointer">
-<span className="material-symbols-outlined text-stone-500 dark:text-[#464555] group-hover:scale-110 group-hover:text-white transition-all" data-icon="play_arrow">play_arrow</span>
-<span className="text-[10px] uppercase tracking-widest font-headline text-stone-500 dark:text-[#464555]">Play</span>
-</div>
-<div className="flex flex-col items-center group cursor-pointer active:scale-90 duration-150">
-<span className="material-symbols-outlined text-secondary drop-shadow-[0_0_8px_rgba(79,219,200,0.5)] group-hover:scale-110 transition-transform" data-icon="stop">stop</span>
-<span className="text-[10px] uppercase tracking-widest font-headline text-secondary">Stop</span>
-</div>
-<div className="flex flex-col items-center group cursor-pointer">
-<span className="material-symbols-outlined text-stone-500 dark:text-[#464555] group-hover:scale-110 group-hover:text-white transition-all" data-icon="loop">loop</span>
-<span className="text-[10px] uppercase tracking-widest font-headline text-stone-500 dark:text-[#464555]">Loop</span>
-</div>
-<div className="w-px h-8 bg-white/10 mx-4"></div>
-<div className="flex items-center gap-4 bg-surface-container-high px-4 py-2 rounded-full border border-white/5">
-<span className="material-symbols-outlined text-primary text-sm" data-icon="speed">speed</span>
-<span className="text-lg font-headline font-bold text-on-surface">124 <span className="text-[10px] text-outline uppercase ml-1">BPM</span></span>
-</div>
-</footer>
-    </>
+      </div>
+    </AppShell>
   );
 }

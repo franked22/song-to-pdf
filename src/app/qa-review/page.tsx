@@ -1,76 +1,22 @@
 "use client";
 
+import AppShell from "@/components/AppShell";
+
+const headerActions = (
+  <div className="flex items-center gap-4">
+    <button className="material-symbols-outlined text-zinc-500 hover:bg-zinc-800/50 transition-all p-2 rounded-lg">notifications</button>
+    <button className="material-symbols-outlined text-zinc-500 hover:bg-zinc-800/50 transition-all p-2 rounded-lg">settings</button>
+    <div className="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
+      <img alt="User profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbkMf39wGpmvoLQYZBRNrvpl0oPn1HB4q2MI9JyUC3QnDZ_fn6q3q2CahQeuWjtwkh8_alP67KUkJlJSfIoGYFti9mmTcDrN7ikPW-cJuP3_YldcQ8C9idYAPHjByt-4eK6NhxuaH328qEqjE-LSEJ67pBAn8KjSNVb4IY7KDqKfU_B_yKGx_qhBOIEXoB2BmucuvccPVaGUtZudVQxDmpw93-BZYq72zqGubXwl4Z6QPlP39-9MF9o1-dazLemauCzwCuEH8iUg"/>
+    </div>
+  </div>
+);
+
 export default function QaReviewPage() {
   return (
-    <>
-      <header className="bg-[#131313] font-['Space_Grotesk'] tracking-tight flex justify-between items-center w-full px-6 py-3 fixed top-0 z-50">
-<div className="flex items-center gap-8">
-<span className="text-xl font-bold text-indigo-100">Harmonic Precision</span>
-<nav className="hidden md:flex gap-6 items-center">
-<a className="text-zinc-500 hover:text-zinc-300 transition-colors" href="#">Dashboard</a>
-<a className="text-zinc-500 hover:text-zinc-300 transition-colors" href="#">Uploader</a>
-<a className="text-zinc-500 hover:text-zinc-300 transition-colors" href="#">Editor</a>
-<a className="text-indigo-400 border-b-2 border-indigo-400 pb-1" href="#">Reports</a>
-</nav>
-</div>
-<div className="flex items-center gap-4">
-<button className="material-symbols-outlined text-zinc-500 hover:bg-zinc-800/50 transition-all p-2 rounded-lg" data-icon="notifications">notifications</button>
-<button className="material-symbols-outlined text-zinc-500 hover:bg-zinc-800/50 transition-all p-2 rounded-lg" data-icon="settings">settings</button>
-<div className="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
-<img alt="User profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbkMf39wGpmvoLQYZBRNrvpl0oPn1HB4q2MI9JyUC3QnDZ_fn6q3q2CahQeuWjtwkh8_alP67KUkJlJSfIoGYFti9mmTcDrN7ikPW-cJuP3_YldcQ8C9idYAPHjByt-4eK6NhxuaH328qEqjE-LSEJ67pBAn8KjSNVb4IY7KDqKfU_B_yKGx_qhBOIEXoB2BmucuvccPVaGUtZudVQxDmpw93-BZYq72zqGubXwl4Z6QPlP39-9MF9o1-dazLemauCzwCuEH8iUg"/>
-</div>
-</div>
-</header>
-<div className="flex h-screen pt-[52px]">
-<aside className="bg-[#1C1B1B] font-['Manrope'] text-sm font-medium h-full w-64 flex flex-col py-4 border-r border-zinc-800/15 shadow-[40px_0_40px_rgba(0,0,0,0.06)] shrink-0">
-<div className="px-6 mb-8 flex items-center gap-3">
-<div className="w-8 h-8 rounded bg-primary-container flex items-center justify-center">
-<span className="material-symbols-outlined text-white text-xs" data-icon="analytics">analytics</span>
-</div>
-<div>
-<h2 className="text-lg font-semibold text-zinc-100 leading-none">QA Review</h2>
-<p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Precision Mode</p>
-</div>
-</div>
-<nav className="flex-1 space-y-1">
-<a className="text-zinc-400 hover:text-zinc-200 px-4 py-3 flex items-center gap-3 transition-colors hover:bg-[#2A2A2A]" href="#">
-<span className="material-symbols-outlined" data-icon="analytics">analytics</span>
-                Overview
-            </a>
-<a className="text-zinc-400 hover:text-zinc-200 px-4 py-3 flex items-center gap-3 transition-colors hover:bg-[#2A2A2A]" href="#">
-<span className="material-symbols-outlined" data-icon="music_note">music_note</span>
-                Pitch Accuracy
-            </a>
-<a className="text-zinc-400 hover:text-zinc-200 px-4 py-3 flex items-center gap-3 transition-colors hover:bg-[#2A2A2A]" href="#">
-<span className="material-symbols-outlined" data-icon="speed">speed</span>
-                Rhythmic Timing
-            </a>
-<a className="text-zinc-400 hover:text-zinc-200 px-4 py-3 flex items-center gap-3 transition-colors hover:bg-[#2A2A2A]" href="#">
-<span className="material-symbols-outlined" data-icon="lyrics">lyrics</span>
-                Lyric Alignment
-            </a>
-<a className="bg-[#2A2A2A] text-teal-400 rounded-md ml-2 my-1 px-4 py-3 flex items-center gap-3" href="#">
-<span className="material-symbols-outlined" data-icon="Query_stats">query_stats</span>
-                Confidence Map
-            </a>
-</nav>
-<div className="mt-auto px-4 space-y-1 pt-4 border-t border-outline-variant/10">
-<a className="text-zinc-400 hover:text-zinc-200 px-4 py-3 flex items-center gap-3 transition-colors" href="#">
-<span className="material-symbols-outlined" data-icon="help_outline">help_outline</span>
-                Help
-            </a>
-<a className="text-zinc-400 hover:text-zinc-200 px-4 py-3 flex items-center gap-3 transition-colors" href="#">
-<span className="material-symbols-outlined" data-icon="archive">archive</span>
-                Archive
-            </a>
-<button className="w-full mt-4 bg-gradient-to-br from-primary to-primary-container text-on-primary py-2.5 rounded-md font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20">
-                Export Score
-                <span className="material-symbols-outlined text-sm" data-icon="ios_share">ios_share</span>
-</button>
-</div>
-</aside>
-<main className="flex-1 flex flex-col bg-background overflow-hidden">
-<section className="h-[40%] bg-surface-container-low relative border-b border-outline-variant/10 flex flex-col">
+    <AppShell headerActions={headerActions}>
+<div className="pt-8 pb-24 px-8 max-w-6xl mx-auto w-full">
+      <section className="h-[40%] bg-surface-container-low relative border-b border-outline-variant/10 flex flex-col">
 <div className="flex items-center justify-between px-6 py-4">
 <div className="flex items-center gap-4">
 <span className="font-headline text-2xl font-bold text-primary">02:44:12</span>
@@ -278,8 +224,7 @@ export default function QaReviewPage() {
 </div>
 </div>
 </section>
-</main>
-<aside className="w-80 bg-surface-container-low border-l border-outline-variant/10 flex flex-col h-full shrink-0">
+      <aside className="w-80 bg-surface-container-low border-l border-outline-variant/10 flex flex-col h-full shrink-0">
 <div className="p-6 border-b border-outline-variant/10">
 <h3 className="font-headline font-semibold text-lg">Review Console</h3>
 <p className="text-xs text-zinc-500 mt-1">12 issues remaining in this section</p>
@@ -337,16 +282,16 @@ export default function QaReviewPage() {
                     Mark for Human Oversight
                 </button>
 </div>
-</div>
-</aside>
-</div>
+      </div>
+      </aside>
 
-<div className="fixed bottom-6 right-8 w-48 h-12 glass-panel border border-white/10 rounded-lg overflow-hidden flex items-center shadow-2xl z-[60]">
-<div className="w-full h-full relative opacity-50">
-<img alt="Global waveform map" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQJVROxYh3EMiWAkuINESbiX1_ndrQ4OaB9Rd3hmUr5gvDs7EfwuhEKRvIQYhYm8VVey4YOoPm68rjDfGOar0VZkeJkwrTpuzYlMNf5AENmjPhDPSbGEni_RrxXKOkwpyEhAjvIbP0YnsIm5DZBUzE3EJMX_WlXaIgqFDhZurRsPsPSHsPFyR-35wpKWTytUHyWCIlGUmIKiLm0pMlJ-Z64mD7__bWzQMmNF5T-kDPuWM2hAbLlYi4qLCicQT9fWZsAMeIIvbAZQ"/>
-<div className="absolute left-1/3 top-0 bottom-0 w-12 bg-primary/20 border-x border-primary"></div>
-</div>
-</div>
-    </>
+      <div className="fixed bottom-6 right-8 w-48 h-12 glass-panel border border-white/10 rounded-lg overflow-hidden flex items-center shadow-2xl z-[60]">
+        <div className="w-full h-full relative opacity-50">
+          <img alt="Global waveform map" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQJVROxYh3EMiWAkuINESbiX1_ndrQ4OaB9Rd3hmUr5gvDs7EfwuhEKRvIQYhYm8VVey4YOoPm68rjDfGOar0VZkeJkwrTpuzYlMNf5AENmjPhDPSbGEni_RrxXKOkwpyEhAjvIbP0YnsIm5DZBUzE3EJMX_WlXaIgqFDhZurRsPsPSHsPFyR-35wpKWTytUHyWCIlGUmIKiLm0pMlJ-Z64mD7__bWzQMmNF5T-kDPuWM2hAbLlYi4qLCicQT9fWZsAMeIIvbAZQ"/>
+          <div className="absolute left-1/3 top-0 bottom-0 w-12 bg-primary/20 border-x border-primary"></div>
+        </div>
+      </div>
+    </div>
+    </AppShell>
   );
 }
