@@ -1,9 +1,44 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { MOCK_LEAD_SHEET } from "@/lib/store";
+import { getTranscriptionResult, type TranscriptionResult } from "@/lib/api";
 import type { LeadSheet, ChordSymbol } from "@/types";
+
+function resultToLeadSheet(r: TranscriptionResult): LeadSheet {
+  return {
+    id: `ls-${r.project_id}`,
+    projectId: r.project_id,
+    title: r.title,
+    artist: r.artist,
+    key: r.key,
+    bpm: r.bpm,
+    timeSignature: r.time_signature,
+    sections: r.sections.map((s) => ({
+      id: s.id,
+      name: s.name,
+      measures: s.measures.map((m) => ({
+        id: m.id,
+        number: m.number,
+        chords: m.chords.map((c) => ({
+          root: c.root,
+          quality: c.quality,
+          bass: c.bass ?? undefined,
+          beat: c.beat,
+        })),
+        lyrics: m.lyrics ?? undefined,
+        notes: m.notes.map((n) => ({
+          pitch: n.pitch,
+          value: n.value as "whole" | "half" | "quarter" | "eighth" | "sixteenth",
+          beat: n.start_beat,
+          duration: n.duration_beats,
+        })),
+      })),
+    })),
+  };
+}
 
 function chordDisplay(chord: ChordSymbol): string {
   return `${chord.root}${chord.quality}${chord.bass ? `/${chord.bass}` : ""}`;
@@ -99,9 +134,22 @@ async function generatePDF(sheet: LeadSheet): Promise<Blob> {
   return doc.output("blob");
 }
 
-export default function LeadSheetPdfPage() {
-  const [sheet] = useState<LeadSheet>(MOCK_LEAD_SHEET);
+function LeadSheetPdfInner() {
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get("project");
+  const [sheet, setSheet] = useState<LeadSheet>(MOCK_LEAD_SHEET);
   const [generating, setGenerating] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const pid = projectId || (typeof window !== "undefined" ? sessionStorage.getItem("lastProjectId") : null);
+    if (!pid) return;
+    setLoading(true);
+    getTranscriptionResult(pid)
+      .then((result) => setSheet(resultToLeadSheet(result)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [projectId]);
 
   const handleExport = useCallback(async () => {
     setGenerating(true);
@@ -200,5 +248,19 @@ export default function LeadSheetPdfPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function LeadSheetPdfPage() {
+  return (
+    <Suspense fallback={
+      <AppShell>
+        <div className="flex items-center justify-center h-[60vh]">
+          <span className="material-symbols-outlined text-primary text-5xl animate-spin">progress_activity</span>
+        </div>
+      </AppShell>
+    }>
+      <LeadSheetPdfInner />
+    </Suspense>
   );
 }

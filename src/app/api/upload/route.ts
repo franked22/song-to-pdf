@@ -1,40 +1,31 @@
 import { NextResponse } from "next/server";
 
-// POST /api/upload — accept audio file, return project stub
-// In a real app this would save to cloud storage and kick off a transcription job.
-// For the demo we just validate and return a mock project ID.
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/**
+ * Proxy upload requests to the Python backend.
+ * This allows the frontend to call /api/upload without CORS issues.
+ */
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const allowedTypes = ["audio/wav", "audio/x-wav", "audio/mpeg", "audio/mp3", "audio/flac", "audio/aiff", "audio/x-aiff"];
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-    const allowedExts = ["wav", "mp3", "flac", "aiff", "aif"];
-
-    if (!allowedTypes.includes(file.type) && !allowedExts.includes(ext)) {
-      return NextResponse.json({ error: "Unsupported audio format" }, { status: 415 });
-    }
-
-    if (file.size > 500 * 1024 * 1024) {
-      return NextResponse.json({ error: "File exceeds 500MB limit" }, { status: 413 });
-    }
-
-    // Generate mock project
-    const projectId = `proj-${Date.now()}`;
-
-    return NextResponse.json({
-      projectId,
-      filename: file.name,
-      size: file.size,
-      status: "queued",
+    const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      method: "POST",
+      body: formData,
     });
-  } catch {
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Backend unavailable. Make sure the transcription server is running." },
+      { status: 502 }
+    );
   }
 }

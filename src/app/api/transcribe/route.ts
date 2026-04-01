@@ -1,63 +1,47 @@
 import { NextResponse } from "next/server";
 
-// POST /api/transcribe — start a transcription job
-// GET  /api/transcribe?jobId=xxx — poll job status
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const jobs = new Map<string, { progress: number; stage: string; status: string }>();
-
+/**
+ * POST — Start a transcription job (proxy to backend)
+ * GET  — Poll job status (proxy to backend)
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { projectId } = body;
 
-    if (!projectId) {
-      return NextResponse.json({ error: "projectId required" }, { status: 400 });
-    }
-
-    const jobId = `job-${Date.now()}`;
-    jobs.set(jobId, {
-      progress: 0,
-      stage: "queued",
-      status: "processing",
+    const res = await fetch(`${BACKEND_URL}/api/transcribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
-    // Simulate async progress
-    const stages = [
-      { progress: 15, stage: "separating_stems" },
-      { progress: 40, stage: "detecting_pitch" },
-      { progress: 65, stage: "generating_notation" },
-      { progress: 85, stage: "building_lead_sheet" },
-      { progress: 100, stage: "complete" },
-    ];
-
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i >= stages.length) {
-        clearInterval(interval);
-        return;
-      }
-      const s = stages[i];
-      jobs.set(jobId, {
-        progress: s.progress,
-        stage: s.stage,
-        status: s.stage === "complete" ? "complete" : "processing",
-      });
-      i++;
-    }, 2000);
-
-    return NextResponse.json({ jobId, projectId, status: "processing" });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
   } catch {
-    return NextResponse.json({ error: "Failed to start transcription" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Backend unavailable" },
+      { status: 502 }
+    );
   }
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const jobId = searchParams.get("jobId");
+  try {
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get("jobId");
 
-  if (!jobId || !jobs.has(jobId)) {
-    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    if (!jobId) {
+      return NextResponse.json({ error: "jobId required" }, { status: 400 });
+    }
+
+    const res = await fetch(`${BACKEND_URL}/api/job/${jobId}`);
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json(
+      { error: "Backend unavailable" },
+      { status: 502 }
+    );
   }
-
-  return NextResponse.json({ jobId, ...jobs.get(jobId) });
 }

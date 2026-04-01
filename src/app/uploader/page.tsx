@@ -3,18 +3,15 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import type { UploadState, TranscriptionQuality } from "@/types";
+import {
+  uploadAudio,
+  startTranscription as apiStartTranscription,
+  pollUntilDone,
+  type JobResponse,
+} from "@/lib/api";
+import type { TranscriptionQuality } from "@/types";
 
-const ACCEPTED_TYPES = [
-  "audio/wav",
-  "audio/x-wav",
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/flac",
-  "audio/aiff",
-  "audio/x-aiff",
-];
-const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".flac", ".aiff", ".aif"];
+const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".flac", ".aiff", ".aif", ".ogg", ".m4a"];
 const MAX_SIZE_MB = 500;
 
 function formatBytes(bytes: number): string {
@@ -23,45 +20,63 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
+type Status = "idle" | "uploading" | "processing" | "complete" | "error";
+
 export default function UploaderPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [upload, setUpload] = useState<UploadState>({
-    file: null,
-    progress: 0,
-    status: "idle",
-  });
-  const [quality, setQuality] = useState<TranscriptionQuality>("standard");
-  const [outputFormat, setOutputFormat] = useState<"piano" | "lead-sheet" | "orchestration">("lead-sheet");
-  const [jobStage, setJobStage] = useState("");
 
-  const validateFile = (file: File): string | null => {
-    const ext = "." + file.name.split(".").pop()?.toLowerCase();
-    if (!ACCEPTED_EXTENSIONS.includes(ext) && !ACCEPTED_TYPES.includes(file.type)) {
-      return `Unsupported format. Please use WAV, MP3, FLAC, or AIFF.`;
+  const [dragActive, setDragActive] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<Status>("idle");
+  const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState("");
+  const [error, setError] = useState("");
+  const [quality, setQuality] = useState<TranscriptionQuality>("standard");
+  const [outputFormat, setOutputFormat] = useState<"lead_sheet" | "piano_score">("lead_sheet");
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+
+  // Audio metadata from upload
+  const [audioMeta, setAudioMeta] = useState<{
+    duration: number | null;
+    sample_rate: number | null;
+  } | null>(null);
+
+  const validateFile = (f: File): string | null => {
+    const ext = "." + f.name.split(".").pop()?.toLowerCase();
+    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+      return `Unsupported format (${ext}). Use WAV, MP3, FLAC, AIFF, OGG, or M4A.`;
     }
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      return `File too large (${formatBytes(file.size)}). Maximum is ${MAX_SIZE_MB}MB.`;
+    if (f.size > MAX_SIZE_MB * 1024 * 1024) {
+      return `File too large (${formatBytes(f.size)}). Maximum is ${MAX_SIZE_MB}MB.`;
     }
     return null;
   };
 
-  const handleFile = useCallback((file: File) => {
-    const error = validateFile(file);
-    if (error) {
-      setUpload({ file: null, progress: 0, status: "error", error });
+  const handleFile = useCallback((f: File) => {
+    const err = validateFile(f);
+    if (err) {
+      setError(err);
+      setStatus("error");
       return;
     }
-    setUpload({ file, progress: 0, status: "idle" });
-  }, []);
+    setFile(f);
+    setStatus("idle");
+    setError("");
+    // Auto-populate title from filename
+    if (!title) {
+      const name = f.name.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ");
+      setTitle(name);
+    }
+  }, [title]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragActive(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      const f = e.dataTransfer.files[0];
+      if (f) handleFile(f);
     },
     [handleFile]
   );
@@ -75,66 +90,102 @@ export default function UploaderPage() {
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) handleFile(file);
+      const f = e.target.files?.[0];
+      if (f) handleFile(f);
     },
     [handleFile]
   );
 
-  const startTranscription = useCallback(() => {
-    if (!upload.file) return;
+  const startTranscription = useCallback(async () => {
+    if (!file) return;
 
-    // Simulate upload phase
-    setUpload((prev) => ({ ...prev, status: "uploading", progress: 0 }));
+    try {
+      // Phase 1: Upload
+      setStatus("uploading");
+      setProgress(5);
+      setStage("Uploading audio to server...");
 
-    const stages = [
-      { progress: 25, status: "uploading" as const, stage: "Uploading audio..." },
-      { progress: 40, status: "processing" as const, stage: "Separating stems..." },
-      { progress: 60, status: "processing" as const, stage: "Detecting pitch & rhythm..." },
-      { progress: 80, status: "processing" as const, stage: "Generating notation..." },
-      { progress: 95, status: "processing" as const, stage: "Building lead sheet..." },
-      { progress: 100, status: "complete" as const, stage: "Complete!" },
-    ];
+      const uploadRes = await uploadAudio(file, title || "Untitled", artist || "Unknown");
+      setAudioMeta({
+        duration: uploadRes.duration,
+        sample_rate: uploadRes.sample_rate,
+      });
+      setProgress(15);
+      setStage("Upload complete. Starting transcription...");
 
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i >= stages.length) {
-        clearInterval(interval);
-        setTimeout(() => router.push("/lead-sheet"), 1200);
-        return;
+      // Phase 2: Start transcription job
+      setStatus("processing");
+      const jobRes = await apiStartTranscription(
+        uploadRes.project_id,
+        outputFormat,
+        quality
+      );
+
+      // Phase 3: Poll until done
+      await pollUntilDone(
+        jobRes.job_id,
+        (job: JobResponse) => {
+          setProgress(Math.round(job.progress));
+          setStage(job.stage);
+
+          if (job.status === "error") {
+            setError(job.error_message || "Transcription failed");
+            setStatus("error");
+          }
+        },
+        2000
+      );
+
+      // Complete — redirect to editor
+      setStatus("complete");
+      setProgress(100);
+      setStage("Transcription complete!");
+
+      // Store project ID for the editor to fetch
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("lastProjectId", uploadRes.project_id);
       }
-      const s = stages[i];
-      setUpload((prev) => ({ ...prev, status: s.status, progress: s.progress }));
-      setJobStage(s.stage);
-      i++;
-    }, 1500);
-  }, [upload.file, router]);
+
+      setTimeout(() => {
+        router.push(`/lead-sheet?project=${uploadRes.project_id}`);
+      }, 1500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(msg);
+      setStatus("error");
+      setStage("");
+    }
+  }, [file, title, artist, quality, outputFormat, router]);
 
   const reset = () => {
-    setUpload({ file: null, progress: 0, status: "idle" });
-    setJobStage("");
+    setFile(null);
+    setStatus("idle");
+    setProgress(0);
+    setStage("");
+    setError("");
+    setAudioMeta(null);
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const isProcessing = upload.status === "uploading" || upload.status === "processing";
+  const isProcessing = status === "uploading" || status === "processing";
+  const showProgressView = isProcessing || status === "complete" || (status === "error" && progress > 0);
 
   return (
     <AppShell>
       <div className="pt-8 pb-24 px-8 max-w-4xl mx-auto w-full">
-        {/* Header */}
         <div className="mb-10 text-center">
           <h2 className="text-3xl font-headline font-bold tracking-tight text-on-surface mb-2">
             Ingest New Audio
           </h2>
           <p className="text-outline font-body text-sm">
-            Upload high-fidelity stems or recordings for AI-driven transcription.
+            Upload audio for AI-powered transcription to lead sheet or piano score.
           </p>
         </div>
 
         <div className="grid grid-cols-12 gap-6">
-          {/* Drop Zone */}
+          {/* Drop Zone / Progress */}
           <div className="col-span-12 lg:col-span-8">
-            {!isProcessing && upload.status !== "complete" ? (
+            {!showProgressView ? (
               <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
@@ -143,9 +194,9 @@ export default function UploaderPage() {
                 className={`relative h-80 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 cursor-pointer transition-all ${
                   dragActive
                     ? "border-primary bg-primary/5 scale-[1.01]"
-                    : upload.file
+                    : file
                     ? "border-secondary/50 bg-secondary/5"
-                    : upload.status === "error"
+                    : status === "error"
                     ? "border-error/50 bg-error/5"
                     : "border-outline-variant/30 bg-surface-container-low hover:border-primary/40 hover:bg-surface-container-high"
                 }`}
@@ -158,34 +209,28 @@ export default function UploaderPage() {
                   className="hidden"
                 />
 
-                {upload.status === "error" ? (
+                {status === "error" && !file ? (
                   <div className="flex flex-col items-center text-center">
                     <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined text-error text-3xl">error</span>
                     </div>
-                    <p className="text-sm text-error font-bold mb-2">{upload.error}</p>
+                    <p className="text-sm text-error font-bold mb-2">{error}</p>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        reset();
-                      }}
+                      onClick={(e) => { e.stopPropagation(); reset(); }}
                       className="text-xs text-outline hover:text-on-surface underline"
                     >
                       Try again
                     </button>
                   </div>
-                ) : upload.file ? (
+                ) : file ? (
                   <div className="flex flex-col items-center text-center">
                     <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined text-secondary text-3xl">audio_file</span>
                     </div>
-                    <p className="text-sm font-bold text-on-surface mb-1">{upload.file.name}</p>
-                    <p className="text-xs text-outline mb-4">{formatBytes(upload.file.size)}</p>
+                    <p className="text-sm font-bold text-on-surface mb-1">{file.name}</p>
+                    <p className="text-xs text-outline mb-4">{formatBytes(file.size)}</p>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        reset();
-                      }}
+                      onClick={(e) => { e.stopPropagation(); reset(); }}
                       className="text-xs text-outline hover:text-error underline"
                     >
                       Remove
@@ -193,46 +238,108 @@ export default function UploaderPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                    <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-5">
                       <span className="material-symbols-outlined text-primary text-3xl">cloud_upload</span>
                     </div>
                     <h3 className="text-lg font-headline font-bold mb-1">Drop audio files here</h3>
                     <p className="text-sm text-outline mb-6 font-label">
-                      WAV, MP3, FLAC or AIFF (Max {MAX_SIZE_MB}MB)
+                      WAV, MP3, FLAC, AIFF, OGG, M4A (Max {MAX_SIZE_MB}MB)
                     </p>
-                    <span className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-primary-fixed-dim transition-all">
+                    <span className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm">
                       Select from Filesystem
                     </span>
                   </div>
                 )}
               </div>
             ) : (
-              /* Processing View */
+              /* Real Processing View */
               <div className="p-8 bg-surface-container-low rounded-2xl border border-white/5">
                 <div className="flex justify-between items-end mb-6">
                   <div>
                     <span className="text-[10px] font-label uppercase tracking-[0.3em] text-secondary mb-2 block font-bold">
-                      {upload.status === "complete" ? "Transcription Complete" : "Transcription In Progress"}
+                      {(status as string) === "complete"
+                        ? "Transcription Complete"
+                        : (status as string) === "error"
+                        ? "Error"
+                        : "Transcription In Progress"}
                     </span>
-                    <h4 className="text-2xl font-headline font-bold text-on-surface">{jobStage}</h4>
+                    <h4 className="text-2xl font-headline font-bold text-on-surface">{stage}</h4>
+                    {error && (status as string) === "error" && (
+                      <p className="text-sm text-error mt-2">{error}</p>
+                    )}
                   </div>
-                  <span className="text-3xl font-headline font-black text-primary">{upload.progress}%</span>
+                  <span className={`text-3xl font-headline font-black ${(status as string) === "error" ? "text-error" : "text-primary"}`}>
+                    {Math.round(progress)}%
+                  </span>
                 </div>
 
                 <div className="w-full bg-surface-container-lowest h-3 rounded-full overflow-hidden border border-white/5">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${
-                      upload.status === "complete" ? "bg-secondary" : "bg-primary"
+                      (status as string) === "complete"
+                        ? "bg-secondary"
+                        : (status as string) === "error"
+                        ? "bg-error"
+                        : "bg-primary"
                     }`}
-                    style={{ width: `${upload.progress}%` }}
+                    style={{ width: `${progress}%` }}
                   />
                 </div>
 
-                {upload.status === "complete" && (
+                {audioMeta?.duration && (
+                  <p className="mt-3 text-xs text-outline">
+                    Audio: {Math.round(audioMeta.duration)}s
+                    {audioMeta.sample_rate ? ` • ${audioMeta.sample_rate / 1000}kHz` : ""}
+                  </p>
+                )}
+
+                {(status as string) === "complete" && (
                   <p className="mt-4 text-sm text-secondary font-label">
                     Redirecting to lead sheet editor...
                   </p>
                 )}
+
+                {(status as string) === "error" && (
+                  <button
+                    onClick={reset}
+                    className="mt-4 px-4 py-2 bg-surface-container-high text-on-surface rounded-lg text-sm font-bold hover:bg-surface-bright transition-all"
+                  >
+                    Try Again
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Song Metadata (shown when file selected, before processing) */}
+            {file && !isProcessing && status !== "complete" && (
+              <div className="mt-6 p-5 bg-surface-container-low rounded-xl border border-white/5">
+                <h4 className="text-xs font-headline font-bold uppercase tracking-[0.2em] text-outline mb-4">
+                  Song Details (optional)
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-label font-bold text-outline uppercase tracking-wider block mb-1">
+                      Title
+                    </label>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Song title"
+                      className="w-full bg-surface-container-high border border-white/5 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-label font-bold text-outline uppercase tracking-wider block mb-1">
+                      Artist
+                    </label>
+                    <input
+                      value={artist}
+                      onChange={(e) => setArtist(e.target.value)}
+                      placeholder="Artist name"
+                      className="w-full bg-surface-container-high border border-white/5 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -245,13 +352,10 @@ export default function UploaderPage() {
                 Target Output
               </h4>
               <div className="space-y-2">
-                {(
-                  [
-                    { value: "piano", icon: "piano", label: "Piano Score" },
-                    { value: "lead-sheet", icon: "description", label: "Lead Sheet" },
-                    { value: "orchestration", icon: "full_stacked_bar_chart", label: "Orchestration" },
-                  ] as const
-                ).map((opt) => (
+                {([
+                  { value: "lead_sheet" as const, icon: "description", label: "Lead Sheet", desc: "Chords + melody + lyrics" },
+                  { value: "piano_score" as const, icon: "piano", label: "Piano Score", desc: "Full notation, both hands" },
+                ]).map((opt) => (
                   <label
                     key={opt.value}
                     className={`flex items-center justify-between p-3.5 rounded-lg cursor-pointer transition-all border ${
@@ -264,7 +368,10 @@ export default function UploaderPage() {
                       <span className={`material-symbols-outlined text-lg ${outputFormat === opt.value ? "text-primary" : "text-outline"}`}>
                         {opt.icon}
                       </span>
-                      <span className="text-sm font-bold font-headline tracking-tight">{opt.label}</span>
+                      <div>
+                        <span className="text-sm font-bold font-headline tracking-tight block">{opt.label}</span>
+                        <span className="text-[10px] text-outline">{opt.desc}</span>
+                      </div>
                     </div>
                     <input
                       type="radio"
@@ -284,16 +391,15 @@ export default function UploaderPage() {
                 Precision Mode
               </h4>
               <div className="space-y-2">
-                {(
-                  [
-                    { value: "draft", label: "Draft", desc: "Fast, basic accuracy" },
-                    { value: "standard", label: "Standard", desc: "Balanced speed & accuracy" },
-                    { value: "professional", label: "Professional", desc: "Maximum fidelity" },
-                  ] as const
-                ).map((opt) => (
+                {([
+                  { value: "draft" as const, label: "Draft", desc: "Fast (~1min), basic accuracy" },
+                  { value: "standard" as const, label: "Standard", desc: "Balanced (~3min), good accuracy" },
+                  { value: "professional" as const, label: "Professional", desc: "Thorough (~8min), max fidelity" },
+                ]).map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setQuality(opt.value)}
+                    disabled={isProcessing}
                     className={`w-full text-left p-3 rounded-lg transition-all border ${
                       quality === opt.value
                         ? "bg-secondary/10 border-secondary/30"
@@ -312,9 +418,9 @@ export default function UploaderPage() {
             {/* Start Button */}
             <button
               onClick={startTranscription}
-              disabled={!upload.file || isProcessing}
+              disabled={!file || isProcessing}
               className={`w-full py-3.5 font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 ${
-                upload.file && !isProcessing
+                file && !isProcessing
                   ? "bg-primary text-on-primary hover:bg-primary-fixed-dim active:scale-95 shadow-lg shadow-primary/20"
                   : "bg-surface-container-high text-outline cursor-not-allowed"
               }`}

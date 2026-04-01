@@ -1,10 +1,49 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import StatusBadge from "@/components/StatusBadge";
 import { MOCK_LEAD_SHEET } from "@/lib/store";
+import { getTranscriptionResult, type TranscriptionResult } from "@/lib/api";
 import type { LeadSheet, LeadSheetSection, Measure, ChordSymbol } from "@/types";
+
+// ── Convert backend result to frontend LeadSheet type ───────
+
+function resultToLeadSheet(r: TranscriptionResult): LeadSheet {
+  return {
+    id: `ls-${r.project_id}`,
+    projectId: r.project_id,
+    title: r.title,
+    artist: r.artist,
+    key: r.key,
+    bpm: r.bpm,
+    timeSignature: r.time_signature,
+    sections: r.sections.map((s) => ({
+      id: s.id,
+      name: s.name,
+      measures: s.measures.map((m) => ({
+        id: m.id,
+        number: m.number,
+        chords: m.chords.map((c) => ({
+          root: c.root,
+          quality: c.quality,
+          bass: c.bass ?? undefined,
+          beat: c.beat,
+        })),
+        lyrics: m.lyrics ?? undefined,
+        notes: m.notes.map((n) => ({
+          pitch: n.pitch,
+          value: n.value as "whole" | "half" | "quarter" | "eighth" | "sixteenth",
+          beat: n.start_beat,
+          duration: n.duration_beats,
+        })),
+      })),
+    })),
+  };
+}
+
+// ── Sub-components ──────────────────────────────────────────
 
 function chordDisplay(chord: ChordSymbol): string {
   return `${chord.root}${chord.quality}${chord.bass ? `/${chord.bass}` : ""}`;
@@ -101,11 +140,9 @@ function MeasureBlock({
 }) {
   return (
     <div className="flex-1 min-w-[140px] p-3 border-r border-outline-variant/20 last:border-r-0 group/measure hover:bg-surface-container-high/50 transition-colors rounded-lg">
-      {/* Measure number */}
       <span className="text-[9px] text-outline font-label font-bold uppercase tracking-wider block mb-1">
         M{measure.number}
       </span>
-      {/* Chords */}
       <div className="flex flex-wrap gap-2 mb-2">
         {measure.chords.map((chord, ci) => (
           <ChordCell
@@ -115,7 +152,6 @@ function MeasureBlock({
           />
         ))}
       </div>
-      {/* Lyrics */}
       <LyricsCell lyrics={measure.lyrics ?? ""} onEdit={onLyricsEdit} />
     </div>
   );
@@ -141,7 +177,6 @@ function SectionBlock({
 
   return (
     <div className="mb-8">
-      {/* Section Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <span className="text-2xl font-headline font-bold text-outline-variant/30 tracking-tighter">
@@ -153,16 +188,8 @@ function SectionBlock({
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onBlur={() => {
-                setEditingName(false);
-                onRenameSection(name);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setEditingName(false);
-                  onRenameSection(name);
-                }
-              }}
+              onBlur={() => { setEditingName(false); onRenameSection(name); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { setEditingName(false); onRenameSection(name); } }}
               className="bg-surface-container-high border border-outline-variant/30 rounded px-2 py-0.5 text-sm font-bold font-headline focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           ) : (
@@ -183,7 +210,6 @@ function SectionBlock({
         </button>
       </div>
 
-      {/* Measures Grid (4 per row) */}
       <div className="bg-surface-container-low rounded-xl border border-white/5 p-4">
         {Array.from({ length: Math.ceil(section.measures.length / 4) }).map((_, rowIdx) => (
           <div key={rowIdx} className="flex border-b border-outline-variant/10 last:border-b-0">
@@ -198,7 +224,6 @@ function SectionBlock({
                 />
               );
             })}
-            {/* Fill empty slots in last row */}
             {rowIdx === Math.ceil(section.measures.length / 4) - 1 &&
               section.measures.length % 4 !== 0 &&
               Array.from({ length: 4 - (section.measures.length % 4) }).map((_, i) => (
@@ -211,13 +236,45 @@ function SectionBlock({
   );
 }
 
-export default function LeadSheetPage() {
+// ── Main Page ───────────────────────────────────────────────
+
+function LeadSheetInner() {
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get("project");
+
   const [sheet, setSheet] = useState<LeadSheet>(MOCK_LEAD_SHEET);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [dataSource, setDataSource] = useState<"real" | "mock">("mock");
+
+  // Fetch real transcription result if project ID is provided
+  useEffect(() => {
+    const pid = projectId || (typeof window !== "undefined" ? sessionStorage.getItem("lastProjectId") : null);
+    if (!pid) return;
+
+    setLoading(true);
+    setLoadError("");
+
+    getTranscriptionResult(pid)
+      .then((result) => {
+        setSheet(resultToLeadSheet(result));
+        setAccuracy(result.accuracy_estimate);
+        setDataSource("real");
+      })
+      .catch((err) => {
+        console.warn("Could not load transcription result, using mock data:", err.message);
+        setLoadError(err.message);
+        setDataSource("mock");
+      })
+      .finally(() => setLoading(false));
+  }, [projectId]);
 
   const handleChordEdit = useCallback(
     (sectionIdx: number, measureIdx: number, chordIdx: number, value: string) => {
-      setSheet((prev) => {
-        const next = { ...prev, sections: prev.sections.map((s, si) => {
+      setSheet((prev) => ({
+        ...prev,
+        sections: prev.sections.map((s, si) => {
           if (si !== sectionIdx) return s;
           return {
             ...s,
@@ -227,15 +284,13 @@ export default function LeadSheetPage() {
                 ...m,
                 chords: m.chords.map((c, ci) => {
                   if (ci !== chordIdx) return c;
-                  // Parse simple chord string back
                   return { ...c, root: value, quality: "" };
                 }),
               };
             }),
           };
-        })};
-        return next;
-      });
+        }),
+      }));
     },
     []
   );
@@ -293,6 +348,19 @@ export default function LeadSheetPage() {
     }));
   }, []);
 
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center">
+            <span className="material-symbols-outlined text-primary text-5xl animate-spin">progress_activity</span>
+            <p className="mt-4 text-on-surface font-headline font-bold">Loading transcription...</p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       headerActions={
@@ -302,7 +370,10 @@ export default function LeadSheetPage() {
             Transpose
           </button>
           <button
-            onClick={() => window.location.href = "/lead-sheet-pdf"}
+            onClick={() => {
+              const params = projectId ? `?project=${projectId}` : "";
+              window.location.href = `/lead-sheet-pdf${params}`;
+            }}
             className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary-fixed-dim transition-all active:scale-95 shadow-lg shadow-primary/20"
           >
             <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
@@ -312,6 +383,20 @@ export default function LeadSheetPage() {
       }
     >
       <div className="pt-6 pb-24 px-8 max-w-6xl mx-auto w-full">
+        {/* Source indicator */}
+        {loadError && (
+          <div className="mb-4 p-3 bg-tertiary/10 border border-tertiary/20 rounded-xl text-sm text-tertiary">
+            <span className="font-bold">Backend unavailable</span> — showing demo data. Connect backend to transcribe real audio.
+          </div>
+        )}
+
+        {dataSource === "real" && accuracy != null && (
+          <div className="mb-4 p-3 bg-secondary/10 border border-secondary/20 rounded-xl text-sm text-secondary flex items-center gap-2">
+            <span className="material-symbols-outlined text-lg">verified</span>
+            <span>AI transcription — estimated accuracy: <strong>{accuracy}%</strong>. Click any chord or lyric to edit.</span>
+          </div>
+        )}
+
         {/* Title Block */}
         <div className="flex items-end justify-between mb-10">
           <div>
@@ -354,5 +439,19 @@ export default function LeadSheetPage() {
         </button>
       </div>
     </AppShell>
+  );
+}
+
+export default function LeadSheetPage() {
+  return (
+    <Suspense fallback={
+      <AppShell>
+        <div className="flex items-center justify-center h-[60vh]">
+          <span className="material-symbols-outlined text-primary text-5xl animate-spin">progress_activity</span>
+        </div>
+      </AppShell>
+    }>
+      <LeadSheetInner />
+    </Suspense>
   );
 }
