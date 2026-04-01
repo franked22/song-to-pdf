@@ -1,0 +1,251 @@
+"use client";
+
+export default function TranscriptionReportBasePage() {
+  return (
+    <>
+      
+<header className="fixed top-0 left-0 w-full z-50 bg-[#131313] flex justify-between items-center px-6 py-3">
+<div className="flex items-center gap-8">
+<span className="text-xl font-bold text-indigo-100 font-headline tracking-tight">Harmonic Precision</span>
+<nav className="hidden md:flex gap-6">
+<a className="text-zinc-500 hover:text-zinc-300 transition-colors font-label text-sm" href="#">Dashboard</a>
+<a className="text-zinc-500 hover:text-zinc-300 transition-colors font-label text-sm" href="#">Uploader</a>
+<a className="text-zinc-500 hover:text-zinc-300 transition-colors font-label text-sm" href="#">Editor</a>
+<a className="text-indigo-400 border-b-2 border-indigo-400 pb-1 font-label text-sm" href="#">Reports</a>
+</nav>
+</div>
+<div className="flex items-center gap-4">
+<button className="p-2 text-zinc-500 hover:bg-zinc-800/50 transition-all rounded-full active:scale-95 duration-150">
+<span className="material-symbols-outlined">notifications</span>
+</button>
+<button className="p-2 text-zinc-500 hover:bg-zinc-800/50 transition-all rounded-full active:scale-95 duration-150">
+<span className="material-symbols-outlined">settings</span>
+</button>
+<div className="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
+<img alt="User profile" className="w-full h-full object-cover" data-alt="professional headshot of a music conductor in a dark studio setting with soft blue rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFVKkDwrXyrS-AaCx8Wh0cN8xtgYVGEuJCI8X5h8OtfiTgGhaX4xa0VLntVut7JZDOMLgrN4QJXJ6e6zxAbGRQcAk7KyV3xXp4xFCgu_ejFgjgQfbSnhJPMA8S1FjCOuEschG9A3qjmQDuhjP3GkFyC1M7XUNZgEPue6Y60rf2XSA8hXH5ReXYxUGlelRMeAaoWZhCvN6KYpYLghs1OxCNaREx67dNwN9R_9xOhBTq9vSQ44gFhnpxCnjBn9IVvqTW8lUXazy-Jg"/>
+</div>
+</div>
+</header>
+<div className="flex pt-14 min-h-screen">
+
+<aside className="hidden md:flex flex-col h-[calc(100vh-3.5rem)] w-64 fixed left-0 bg-[#1C1B1B] py-4 border-r border-zinc-800/15 shadow-[40px_0_40px_rgba(0,0,0,0.06)]">
+<div className="px-6 mb-8">
+<div className="flex items-center gap-3 mb-1">
+<div className="w-6 h-6 bg-secondary/20 rounded flex items-center justify-center text-secondary">
+<span className="material-symbols-outlined text-sm">analytics</span>
+</div>
+<span className="text-lg font-semibold text-zinc-100 font-headline">QA Review</span>
+</div>
+<span className="text-xs text-zinc-500 font-medium tracking-widest uppercase">Precision Mode</span>
+</div>
+<nav className="flex-1 px-2 space-y-1">
+<a className="flex items-center gap-3 text-zinc-400 hover:text-zinc-200 px-4 py-3 hover:bg-[#2A2A2A] transition-all hover:translate-x-1 rounded-md font-label text-sm" href="#">
+<span className="material-symbols-outlined">analytics</span> Overview
+                </a>
+<a className="flex items-center gap-3 text-zinc-400 hover:text-zinc-200 px-4 py-3 hover:bg-[#2A2A2A] transition-all hover:translate-x-1 rounded-md font-label text-sm" href="#">
+<span className="material-symbols-outlined">music_note</span> Pitch Accuracy
+                </a>
+<a className="flex items-center gap-3 text-zinc-400 hover:text-zinc-200 px-4 py-3 hover:bg-[#2A2A2A] transition-all hover:translate-x-1 rounded-md font-label text-sm" href="#">
+<span className="material-symbols-outlined">speed</span> Rhythmic Timing
+                </a>
+<a className="flex items-center gap-3 text-zinc-400 hover:text-zinc-200 px-4 py-3 hover:bg-[#2A2A2A] transition-all hover:translate-x-1 rounded-md font-label text-sm" href="#">
+<span className="material-symbols-outlined">lyrics</span> Lyric Alignment
+                </a>
+<a className="flex items-center gap-3 bg-[#2A2A2A] text-teal-400 px-4 py-3 rounded-md font-label text-sm ml-2" href="#">
+<span className="material-symbols-outlined" style={{"fontVariationSettings": "'FILL' 1"}}>query_stats</span> Confidence Map
+                </a>
+</nav>
+<div className="px-4 mt-auto space-y-4">
+<button className="w-full py-3 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary-fixed font-semibold text-sm shadow-lg shadow-primary/10 active:scale-[0.98] transition-transform">
+                    Export Score
+                </button>
+<div className="pt-4 border-t border-zinc-800/30">
+<a className="flex items-center gap-3 text-zinc-500 hover:text-zinc-300 px-4 py-2 font-label text-xs" href="#">
+<span className="material-symbols-outlined text-lg">help_outline</span> Help
+                    </a>
+<a className="flex items-center gap-3 text-zinc-500 hover:text-zinc-300 px-4 py-2 font-label text-xs" href="#">
+<span className="material-symbols-outlined text-lg">archive</span> Archive
+                    </a>
+</div>
+</div>
+</aside>
+
+<main className="flex-1 md:ml-64 p-8 bg-background">
+<div className="max-w-6xl mx-auto">
+
+<div className="mb-12 flex justify-between items-end">
+<div>
+<h1 className="text-4xl font-headline font-bold text-on-background tracking-tight mb-2">Transcription Accuracy Report</h1>
+<p className="text-on-surface-variant font-label">Session ID: HP-9928-AX • Mozart_Requiem_Vocal_Stem.wav</p>
+</div>
+<div className="flex gap-3">
+<span className="px-3 py-1 bg-surface-container-high rounded-full text-secondary text-xs font-bold border border-secondary/20">98.5% GLOBAL SCORE</span>
+</div>
+</div>
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<div className="bg-surface-container-low p-6 rounded-xl border-b-2 border-transparent hover:border-primary transition-all">
+<div className="flex justify-between items-start mb-4">
+<span className="material-symbols-outlined text-primary">music_note</span>
+<span className="text-primary font-headline text-3xl font-bold">99.8%</span>
+</div>
+<h3 className="text-on-background font-semibold mb-1">Pitch Accuracy</h3>
+<p className="text-xs text-on-surface-variant leading-relaxed">Near-perfect frequency detection across 4 octaves. Minimal drift detected.</p>
+</div>
+<div className="bg-surface-container-low p-6 rounded-xl border-b-2 border-transparent hover:border-secondary transition-all">
+<div className="flex justify-between items-start mb-4">
+<span className="material-symbols-outlined text-secondary">speed</span>
+<span className="text-secondary font-headline text-3xl font-bold">98.5%</span>
+</div>
+<h3 className="text-on-background font-semibold mb-1">Rhythmic Timing</h3>
+<p className="text-xs text-on-surface-variant leading-relaxed">Micro-fluctuations identified in rubato sections. Quantization alignment active.</p>
+</div>
+<div className="bg-surface-container-low p-6 rounded-xl border-b-2 border-transparent hover:border-tertiary transition-all">
+<div className="flex justify-between items-start mb-4">
+<span className="material-symbols-outlined text-tertiary">lyrics</span>
+<span className="text-tertiary font-headline text-3xl font-bold">97.2%</span>
+</div>
+<h3 className="text-on-background font-semibold mb-1">Lyric Alignment</h3>
+<p className="text-xs text-on-surface-variant leading-relaxed">High syllabic precision. 3 minor phonetic ambiguities flagged for review.</p>
+</div>
+</div>
+
+<div className="bg-surface-container-low rounded-xl overflow-hidden mb-12">
+<div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+<h2 className="font-headline font-bold text-lg">Confidence Map</h2>
+<div className="flex items-center gap-4 text-xs">
+<div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-secondary"></span> High Confidence</div>
+<div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-tertiary"></span> Attention Required</div>
+</div>
+</div>
+<div className="p-8">
+
+<div className="relative h-32 w-full bg-surface-container-lowest rounded-lg mb-4 flex items-center px-4 overflow-hidden group">
+
+<div className="confidence-gradient w-full h-16 opacity-40 blur-[1px]"></div>
+
+<div className="absolute left-1/3 top-0 bottom-0 w-[2px] bg-primary shadow-[0_0_10px_rgba(193,193,255,0.5)] z-10">
+<div className="absolute -top-1 -left-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+<div className="w-1.5 h-1.5 rounded-full bg-on-primary"></div>
+</div>
+</div>
+
+<div className="absolute left-[42%] top-0 bottom-0 w-[8%] bg-tertiary/10 border-x border-tertiary/30 backdrop-blur-[2px]"></div>
+</div>
+<div className="flex justify-between text-[10px] text-zinc-600 font-label tracking-widest uppercase">
+<span>00:00.00</span>
+<span>01:15.00</span>
+<span className="text-tertiary">02:30.00 (Flagged)</span>
+<span>03:45.00</span>
+<span>05:00.00</span>
+</div>
+</div>
+</div>
+
+<div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+<div className="lg:col-span-3">
+<h2 className="font-headline font-bold text-xl mb-6 flex items-center gap-2">
+<span className="material-symbols-outlined text-primary">checklist</span> Action Items
+                        </h2>
+<div className="space-y-3">
+<div className="group flex items-center justify-between p-4 bg-surface-container-high rounded-lg hover:bg-surface-bright transition-all cursor-pointer">
+<div className="flex items-center gap-4">
+<div className="w-8 h-8 rounded bg-tertiary-container/30 flex items-center justify-center text-tertiary">
+<span className="material-symbols-outlined text-sm" style={{"fontVariationSettings": "'FILL' 1"}}>warning</span>
+</div>
+<div>
+<p className="text-sm font-semibold">Check Measure 42: Potential overlap</p>
+<p className="text-xs text-on-surface-variant">Soprano voice frequency clash detected with alto track.</p>
+</div>
+</div>
+<span className="material-symbols-outlined text-zinc-600 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+<div className="group flex items-center justify-between p-4 bg-surface-container-high rounded-lg hover:bg-surface-bright transition-all cursor-pointer">
+<div className="flex items-center gap-4">
+<div className="w-8 h-8 rounded bg-secondary-container/30 flex items-center justify-center text-secondary">
+<span className="material-symbols-outlined text-sm">lyrics</span>
+</div>
+<div>
+<p className="text-sm font-semibold">Verify Phoneme: "Lux"</p>
+<p className="text-xs text-on-surface-variant">Ambiguous vowel duration at 02:45.30.</p>
+</div>
+</div>
+<span className="material-symbols-outlined text-zinc-600 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+<div className="group flex items-center justify-between p-4 bg-surface-container-high rounded-lg hover:bg-surface-bright transition-all cursor-pointer">
+<div className="flex items-center gap-4">
+<div className="w-8 h-8 rounded bg-primary-container/30 flex items-center justify-center text-primary">
+<span className="material-symbols-outlined text-sm">speed</span>
+</div>
+<div>
+<p className="text-sm font-semibold">Rhythmic Anchor Adjustment</p>
+<p className="text-xs text-on-surface-variant">Manual override suggested for final cadence retardando.</p>
+</div>
+</div>
+<span className="material-symbols-outlined text-zinc-600 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</div>
+</div>
+
+<div className="lg:col-span-2">
+<div className="bg-surface-container-low rounded-xl p-6 h-full border border-white/5">
+<h3 className="font-headline font-bold mb-6">Distribution Summary</h3>
+<div className="space-y-6">
+<div>
+<div className="flex justify-between text-xs mb-2">
+<span className="text-on-surface-variant">Harmonic Consistency</span>
+<span className="text-primary">99%</span>
+</div>
+<div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div className="h-full bg-primary w-[99%]"></div>
+</div>
+</div>
+<div>
+<div className="flex justify-between text-xs mb-2">
+<span className="text-on-surface-variant">Background Noise floor</span>
+<span className="text-secondary">-64dB</span>
+</div>
+<div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div className="h-full bg-secondary w-[85%]"></div>
+</div>
+</div>
+<div>
+<div className="flex justify-between text-xs mb-2">
+<span className="text-on-surface-variant">AI Processing Load</span>
+<span className="text-on-background">High</span>
+</div>
+<div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div className="h-full bg-tertiary w-[70%]"></div>
+</div>
+</div>
+<div className="mt-8 pt-6 border-t border-white/5">
+<div className="flex items-center gap-4 p-4 bg-surface-container-lowest rounded-lg">
+<div className="text-center flex-1">
+<p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Total Notes</p>
+<p className="text-xl font-headline font-bold">14,204</p>
+</div>
+<div className="w-px h-8 bg-white/10"></div>
+<div className="text-center flex-1">
+<p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Time Elapsed</p>
+<p className="text-xl font-headline font-bold">4.2s</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+<button className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-primary text-on-primary shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group z-50">
+<span className="material-symbols-outlined text-2xl group-hover:rotate-12 transition-transform">edit_note</span>
+<div className="absolute right-full mr-4 px-3 py-1 bg-surface-bright text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10">
+            Open in Editor
+        </div>
+</button>
+    </>
+  );
+}
