@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { backendAuthHeaders, getBackendUrl } from "../_lib/backend";
 
 /**
  * Proxy upload requests to the Python backend.
  * This allows the frontend to call /api/upload without CORS issues.
+ * SONIC_API_KEY is read from the server env and is never sent to the client bundle.
  */
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
 
-    const res = await fetch(`${BACKEND_URL}/api/upload`, {
+    const res = await fetch(`${getBackendUrl()}/api/upload`, {
       method: "POST",
+      headers: backendAuthHeaders(),
       body: formData,
     });
 
