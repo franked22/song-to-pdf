@@ -1,8 +1,9 @@
 /**
  * API client for the Song-to-PDF transcription backend.
+ *
+ * Browser calls stay on this Next.js origin. Server route handlers attach
+ * SONIC_API_KEY from the server env — never send the key from the client.
  */
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ── Types matching backend models ────────────────────────────
 
@@ -83,7 +84,7 @@ export interface TranscriptionResult {
   accuracy_estimate: number | null;
 }
 
-// ── API Functions ────────────────────────────────────────────
+// ── API Functions ────────────────────────────────
 
 export async function uploadAudio(
   file: File,
@@ -95,7 +96,7 @@ export async function uploadAudio(
   formData.append("title", title);
   formData.append("artist", artist);
 
-  const res = await fetch(`${API_URL}/api/upload`, {
+  const res = await fetch(`/api/upload`, {
     method: "POST",
     body: formData,
   });
@@ -113,7 +114,7 @@ export async function startTranscription(
   outputFormat: "lead_sheet" | "piano_score" = "lead_sheet",
   quality: "draft" | "standard" | "professional" = "standard"
 ): Promise<JobResponse> {
-  const res = await fetch(`${API_URL}/api/transcribe`, {
+  const res = await fetch(`/api/transcribe`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -132,7 +133,7 @@ export async function startTranscription(
 }
 
 export async function pollJobStatus(jobId: string): Promise<JobResponse> {
-  const res = await fetch(`${API_URL}/api/job/${jobId}`);
+  const res = await fetch(`/api/transcribe?jobId=${encodeURIComponent(jobId)}`);
   if (!res.ok) {
     throw new Error(`Job poll failed: ${res.status}`);
   }
@@ -142,7 +143,7 @@ export async function pollJobStatus(jobId: string): Promise<JobResponse> {
 export async function getTranscriptionResult(
   projectId: string
 ): Promise<TranscriptionResult> {
-  const res = await fetch(`${API_URL}/api/result/${projectId}`);
+  const res = await fetch(`/api/result?projectId=${encodeURIComponent(projectId)}`);
   if (!res.ok) {
     throw new Error(`Result fetch failed: ${res.status}`);
   }
@@ -150,7 +151,16 @@ export async function getTranscriptionResult(
 }
 
 export function getFileUrl(path: string): string {
-  return `${API_URL}${path}`;
+  // Same-origin so the files proxy can attach SONIC_API_KEY server-side.
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    try {
+      const url = new URL(path);
+      return url.pathname + url.search;
+    } catch {
+      return path;
+    }
+  }
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
 /**
