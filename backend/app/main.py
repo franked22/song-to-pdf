@@ -7,7 +7,7 @@ Endpoints:
 - GET  /api/job/{job_id}    — Poll job status
 - GET  /api/result/{project_id} — Get completed transcription result
 - GET  /api/files/{path}    — Serve stems and other output files
-- GET  /health              — Health check
+- GET  /health              — Health check (unauthenticated)
 """
 
 from __future__ import annotations
@@ -18,11 +18,12 @@ from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import Depends, FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 import uvicorn
 
+from app.auth import require_api_key
 from app.config import (
     CORS_ORIGINS, UPLOAD_DIR, OUTPUT_DIR, MAX_UPLOAD_SIZE_MB, PORT,
 )
@@ -34,7 +35,7 @@ from app.pipeline.audio_analysis import analyze_audio
 from app.pipeline.orchestrator import run_pipeline
 
 
-# ── App Setup ────────────────────────────────────────────────
+# ── App Setup ────────────────────────────────
 
 app = FastAPI(
     title="Song-to-PDF Transcription API",
@@ -51,22 +52,42 @@ app.add_middleware(
 )
 
 
-# ── In-Memory State ─────────────────────────────────────────
+# ── In-Memory State ─────────────────────────────
 # In production, replace with Redis or database
 
 jobs: dict[str, JobResponse] = {}
 results: dict[str, TranscriptionResult] = {}
 project_files: dict[str, Path] = {}  # project_id -> audio file path
 
+MAX_CONCURRENT_JOBS = 3
+_TERMINAL_STATUSES = {JobStatus.complete, JobStatus.error}
+_protected = [Depends(require_api_key)]
 
-# ── Endpoints ────────────────────────────────────────────────
+
+def _active_job_count() -> int:
+    return sum(1 for j in jobs.values() if j.status not in _TERMINAL_STATUSES)
+
+
+async def require_job_capacity() -> None:
+    """Simple in-memory cap on concurrent transcription jobs."""
+    if _active_job_count() >= MAX_CONCURRENT_JOBS:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many concurrent jobs (max {MAX_CONCURRENT_JOBS})",
+        )
+
+
+_upload_transcribe_deps = _protected + [Depends(require_job_capacity)]
+
+
+# ── Endpoints ────────────────────────────────
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
-@app.post("/api/upload", response_model=UploadResponse)
+@app.post("/api/upload", response_model=UploadResponse, dependencies=_upload_transcribe_deps)
 async def upload_audio(
     file: UploadFile = File(...),
     title: str = Form("Untitled"),
@@ -118,7 +139,7 @@ async def upload_audio(
     )
 
 
-@app.post("/api/transcribe", response_model=JobResponse)
+@app.post("/api/transcribe", response_model=JobResponse, dependencies=_upload_transcribe_deps)
 async def start_transcription(request: TranscribeRequest):
     """Start an async transcription job."""
     project_id = request.project_id
@@ -191,7 +212,7 @@ async def start_transcription(request: TranscribeRequest):
     return jobs[job_id]
 
 
-@app.get("/api/job/{job_id}", response_model=JobResponse)
+@app.get("/api/job/{job_id}", response_model=JobResponse, dependencies=_protected)
 async def get_job_status(job_id: str):
     """Poll the status of a transcription job."""
     if job_id not in jobs:
@@ -199,7 +220,7 @@ async def get_job_status(job_id: str):
     return jobs[job_id]
 
 
-@app.get("/api/result/{project_id}")
+@app.get("/api/result/{project_id}", dependencies=_protected)
 async def get_result(project_id: str):
     """Get the completed transcription result."""
     if project_id not in results:
@@ -207,7 +228,7 @@ async def get_result(project_id: str):
     return results[project_id]
 
 
-@app.get("/api/files/{project_id}/{path:path}")
+@app.get("/api/files/{project_id}/{path:path}", dependencies=_protected)
 async def serve_file(project_id: str, path: str):
     """Serve output files (stems, MIDI, etc.)."""
     file_path = OUTPUT_DIR / project_id / path
@@ -223,7 +244,7 @@ async def serve_file(project_id: str, path: str):
     return FileResponse(file_path)
 
 
-@app.delete("/api/project/{project_id}")
+@app.delete("/api/project/{project_id}", dependencies=_protected)
 async def delete_project(project_id: str):
     """Clean up a project's files."""
     # Remove upload
@@ -248,7 +269,7 @@ async def delete_project(project_id: str):
     return {"status": "deleted", "project_id": project_id}
 
 
-# ── Entry Point ──────────────────────────────────────────────
+# ── Entry Point ───────────────────────────────
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=PORT, reload=False)
